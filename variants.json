@@ -1,0 +1,44 @@
+[
+  {
+    "name": "dropout_005_logret",
+    "dropout": 0.05,
+    "return_transform": "log_return",
+    "metric_space": "returns",
+    "gradient_clip_norm": 0.5
+  },
+  {
+    "name": "dropout_010_logret",
+    "dropout": 0.1,
+    "return_transform": "log_return",
+    "metric_space": "returns",
+    "gradient_clip_norm": 0.5
+  },
+  {
+    "name": "dropout_020_logret",
+    "dropout": 0.2,
+    "return_transform": "log_return",
+    "metric_space": "returns",
+    "gradient_clip_norm": 0.5
+  },
+  {
+    "name": "dropout_005_none",
+    "dropout": 0.05,
+    "return_transform": "none",
+    "metric_space": "prices",
+    "gradient_clip_norm": 0.5
+  },
+  {
+    "name": "dropout_010_none",
+    "dropout": 0.1,
+    "return_transform": "none",
+    "metric_space": "prices",
+    "gradient_clip_norm": 0.5
+  },
+  {
+    "name": "dropout_020_none",
+    "dropout": 0.2,
+    "return_transform": "none",
+    "metric_space": "prices",
+    "gradient_clip_norm": 0.5
+  }
+]

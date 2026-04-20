@@ -1,0 +1,6 @@
+[MASTER]
+ignore-patterns=.venv
+known-third-party=matplotlib,numpy,torch,wandb,pandas
+
+[FORMAT]
+max-line-length=120

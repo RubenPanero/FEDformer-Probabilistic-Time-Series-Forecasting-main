@@ -1,0 +1,122 @@
+name: Compatibility Tests
+
+on:
+  push:
+    branches: [main, master, develop, feature/optuna, feat/inference-api, optimize-critical-bottlenecks]
+  pull_request:
+    branches: [main, master, develop, feature/optuna, feat/inference-api, optimize-critical-bottlenecks]
+  workflow_dispatch:
+
+jobs:
+  api-and-runtime-compatibility:
+    runs-on: ubuntu-latest
+    name: API & Runtime Compatibility (py${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: "**/requirements.txt"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: CLI surface check
+        run: python main.py --help
+
+      - name: Backward-compatible API smoke
+        run: |
+          python - <<'PY'
+          import tempfile
+          from pathlib import Path
+
+          import numpy as np
+          import pandas as pd
+          import torch
+
+          from config import FEDformerConfig
+          from data import PreprocessingPipeline, RegimeDetector, TimeSeriesDataset
+          from models.fedformer import Flow_FEDformer
+          from training import WalkForwardTrainer
+
+          rng = np.random.default_rng(7)
+          rows = 96
+          df = pd.DataFrame(
+              {
+                  "date": pd.date_range("2024-01-01", periods=rows, freq="h"),
+                  "Close": rng.normal(100, 2, rows),
+                  "Volume": rng.normal(1_000, 25, rows),
+              }
+          )
+          with tempfile.TemporaryDirectory() as td:
+              csv_path = Path(td) / "compat.csv"
+              df.to_csv(csv_path, index=False)
+
+              config = FEDformerConfig(
+                  file_path=str(csv_path),
+                  target_features=["Close"],
+                  seq_len=16,
+                  label_len=8,
+                  pred_len=4,
+                  e_layers=2,
+                  d_layers=1,
+                  batch_size=2,
+              )
+
+              assert config.seq_len == 16
+              assert config.sections.model.sequence.seq_len == 16
+              assert config.sections.training.loop.batch_size == 2
+
+              ds = TimeSeriesDataset(config, flag="all")
+              sample = ds[0]
+              assert sample["x_enc"].shape == (config.seq_len, config.enc_in)
+              assert sample["x_dec"].shape == (config.label_len + config.pred_len, config.dec_in)
+              assert sample["y_true"].shape == (config.pred_len, config.c_out)
+
+              model = Flow_FEDformer(config).eval()
+              with torch.no_grad():
+                  dist = model(
+                      sample["x_enc"].unsqueeze(0),
+                      sample["x_dec"].unsqueeze(0),
+                      sample["x_regime"].unsqueeze(0),
+                  )
+                  lp = dist.log_prob(sample["y_true"].unsqueeze(0))
+              assert lp.shape == (1,)
+              assert torch.isfinite(lp).all()
+
+              trainer = WalkForwardTrainer(config, ds)
+              for method in ("run_backtest", "_run_single_fold", "_train_epoch", "_evaluate_model"):
+                  assert hasattr(trainer, method), f"Missing method: {method}"
+
+              _ = PreprocessingPipeline.from_config(
+                  config, target_features=config.target_features, date_column=config.date_column
+              )
+              _ = RegimeDetector(n_regimes=config.n_regimes)
+
+          print("Compatibility smoke checks passed")
+          PY
+
+      - name: Compatibility regression tests
+        run: |
+          pytest -q \
+            tests/test_dataset.py \
+            tests/test_fedformer_basic.py \
+            tests/test_architecture_and_leakage.py \
+            tests/test_flows.py \
+            tests/test_forecast_output.py \
+            tests/test_model_registry.py \
+            tests/test_inference.py \
+            tests/test_trainer_scheduling.py \
+            tests/test_tune_hyperparams.py \
+            tests/test_reproducibility.py \
+            -m "not slow" --maxfail=1

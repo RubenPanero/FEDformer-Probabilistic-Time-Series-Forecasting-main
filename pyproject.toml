@@ -1,0 +1,24 @@
+# Configuración centralizada de herramientas de desarrollo.
+# Este proyecto NO es un paquete instalable — no hay sección [project].
+# Las dependencias siguen gestionándose en requirements.txt.
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = ["docs/optimization"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# pylint se gestiona vía CLI: pylint --disable=all --enable=E,F
+# Ver .github/workflows/pylint.yml para la configuración completa.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --ignore=reports"
+python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "slow: tests that are heavier (I/O, serialization, or longer backward passes)",
+    "benchmark: opt-in performance benchmarks excluded from normal CI",
+]

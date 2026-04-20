@@ -1,0 +1,165 @@
+# Project: FEDformer Probabilistic Time Series (Python / PyTorch)
+# Reference templates: https://github.com/github/gitignore/blob/main/Python.gitignore
+#                     https://github.com/github/gitignore/blob/main/Global/Windows.gitignore
+#                     https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+
+# === Python artifacts ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+
+# === Build & packaging ===
+build/
+dist/
+*.egg-info/
+.eggs/
+MANIFEST
+pip-wheel-metadata/
+
+# === Test & coverage outputs ===
+.pytest_cache/
+.pytest_tmp/
+htmlcov/
+.coverage*
+coverage.xml
+
+# === Git worktrees ===
+.worktrees/
+
+# === Symlink de hooks en worktrees ===
+.claude
+
+# === Tool caches & logs ===
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+.claude/
+*.log
+*.tmp
+*.bak
+
+# === Virtual environments ===
+.venv/
+venv/
+env/
+ENV/
+.env/
+.envrc
+.env
+*.env
+*.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Machine learning artifacts ===
+checkpoints/
+wandb/
+lightning_logs/
+tensorboard/
+artifacts/
+artifacts_archive/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.tfevents*
+
+# === Data & generated reports ===
+data/**
+!data/**/*.py
+!data/**/*.md
+!data/*_features.csv
+reports/**
+!reports/.gitkeep
+
+# === Planes de implementación (locales hasta validar) ===
+docs/plans/
+
+# === Runtime & CLI outputs ===
+logs/
+outputs/
+results/
+run*/
+github_log/
+=3.6.0
+
+# === IDE & editor settings ===
+.vscode/
+.idea/
+.qwen/
+*.code-workspace
+*.swp
+*.swo
+*.orig
+.history/
+.ipynb_checkpoints/
+*.ipynb
+
+# === OS-specific metadata ===
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# === Kilo Code AI context (local AI rules & skills — no compartir en el repositorio) ===
+.kilocode/
+
+# === Claude Code (local AI context — no compartir en el repositorio) ===
+# CLAUDE.md re-indexado para control de versiones (2026-03-09)
+.superpowers/
+docs/superpowers/plans/
+
+# === Documentation (personal/internal) ===
+CRITICAL_FIXES.md
+IMPLEMENTATION_SUMMARY.md
+VERIFICATION.md
+COMPLETION_REPORT.txt
+GITHUB_PUSH_GUIDE.md
+README_READY_TO_PUSH.md
+READY_FOR_PUSH.txt
+push_to_github.sh
+
+# === Internal tests (use GitHub Actions workflows instead) ===
+tests/test_critical_fixes.py
+tests/test_critical_fixes_simple.py
+tests/validate_fixes.py
+
+# === Archivos auxiliares (locales) ===
+archivos auxiliares/
+
+# === Self-improvement learnings (locales) ===
+.learnings/
+
+# === Archivo de archivo — materiales históricos y temporales ===
+archive/
+
+# === Optuna study databases (binarios, no versionar) ===
+optuna_studies/
+
+# === Specs / planes locales (no versionar) ===
+spec/
+
+# === BMAD brainstorming output (no versionar) ===
+_bmad/
+_bmad-output/
+AGENTS.md
+QWEN.md
+
+# === Claude Code (local AI context — no compartir) ===
+.claude/
+.claude/hooks/
+
+# === Kilo Code AI context (local rules & skills — no compartir) ===
+.kilo/
+.kilo/plans/
+
+# === Project internal documentation & tooling (local only) ===
+docs/
+.codex
+.mcp.json
+CLAUDE.md
+Makefile
