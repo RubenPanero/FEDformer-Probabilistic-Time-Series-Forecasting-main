@@ -20,14 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 def build_financial_dataset(
-    symbol: str, output_dir: str, use_mock: bool = False
+    symbol: str, output_dir: str
 ) -> str:
     """Construye y guarda el dataset financiero con 11 features para FEDformer.
 
     Args:
         symbol:     Ticker, e.g. "NVDA"
         output_dir: Directorio de salida para el CSV
-        use_mock:   Si True, usa yfinance en lugar de Alpha Vantage
 
     Returns:
         Ruta absoluta al CSV generado.
@@ -35,7 +34,7 @@ def build_financial_dataset(
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. Obtener OHLCV (7 años)
-    df = _fetch_ohlcv(symbol, use_mock)
+    df = _fetch_ohlcv(symbol)
 
     # Filtrar a los últimos 7 años — calculado en tiempo de llamada para evitar drift por import
     seven_years_ago = (datetime.now() - timedelta(days=7 * 365)).strftime("%Y-%m-%d")
@@ -51,7 +50,7 @@ def build_financial_dataset(
     vix_fetcher = VixDataFetcher()
     vix_df = vix_fetcher.get_vix_data(start_date=start_date, end_date=end_date)
     if not vix_df.empty:
-        df = df.join(vix_df, how="left")
+        df = df.join(vix_df, how="inner")
         df["VIX_Close"] = df["VIX_Close"].ffill()
     else:
         df["VIX_Close"] = 0.0
@@ -134,29 +133,28 @@ def validate_dataset(df: pd.DataFrame, symbol: str) -> dict[str, Any]:
     return report
 
 
-def _fetch_ohlcv(symbol: str, use_mock: bool) -> pd.DataFrame:
-    """Descarga OHLCV desde yfinance (mock) o Alpha Vantage (real).
+def _fetch_ohlcv(symbol: str) -> pd.DataFrame:
+    """Descarga OHLCV desde yfinance.
 
     Args:
         symbol:   Ticker a descargar.
-        use_mock: Si True, usa yfinance.
 
     Returns:
         DataFrame con índice DatetimeIndex y columnas OHLCV.
     """
-    if use_mock:
-        import yfinance as yf
+    import yfinance as yf
 
-        logger.info("Usando yfinance (mock) para %s", symbol)
-        df = yf.download(symbol, period="7y", progress=False)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-        if df.index.tz is not None:  # guard: yfinance moderno retorna índice tz-naive
-            df.index = df.index.tz_localize(None)
-    else:
-        av_client = AlphaVantageClient()
-        df = av_client.get_daily_data(symbol, outputsize="full")
-
+    logger.info("Descargando datos de %s desde yfinance", symbol)
+    df = yf.download(symbol, period="7y", progress=False)
+    
+    # Manejo de MultiIndex en versiones recientes de yfinance
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(1)
+        
+    # Asegurar índice naive
+    if df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
+        
     return df
 
 
@@ -168,10 +166,5 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", type=str, default="data", help="Directorio de salida"
     )
-    parser.add_argument(
-        "--use_mock",
-        action="store_true",
-        help="Usa yfinance en lugar de Alpha Vantage (no requiere API key)",
-    )
     args = parser.parse_args()
-    build_financial_dataset(args.symbol, args.output_dir, args.use_mock)
+    build_financial_dataset(args.symbol, args.output_dir)

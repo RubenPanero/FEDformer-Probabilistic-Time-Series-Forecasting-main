@@ -163,3 +163,9 @@ docs/
 .mcp.json
 CLAUDE.md
 Makefile
+
+# === AI assistant files (local only) ===
+gemini.md
+settings.json
+skill.md
+python-performance-optimization.skill

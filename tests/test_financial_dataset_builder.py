@@ -69,7 +69,8 @@ def nvda_df(tmp_path):
             return_value=vix_mock,
         ),
     ):
-        output_path = build_financial_dataset("NVDA", str(tmp_path), use_mock=True)
+        output_path = build_financial_dataset("NVDA", str(tmp_path))
+
     return pd.read_csv(output_path, index_col="date", parse_dates=True)
 
 

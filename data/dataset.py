@@ -81,7 +81,7 @@ class TimeSeriesDataset(Dataset):
     ) -> None:
         self.config = config
         self.flag = flag
-        self.strict = config.strict_mode if strict is None else strict
+        self.strict = config.strict_mode if strict is None else True  # Strict por defecto
         self.preprocessor = preprocessor or PreprocessingPipeline.from_config(
             config,
             target_features=config.target_features,
@@ -90,9 +90,10 @@ class TimeSeriesDataset(Dataset):
         )
 
         self.raw_df = self._read_raw_data()
+        self._validate_contract(self.raw_df)
         self.regime_detector = RegimeDetector(n_regimes=self.config.n_regimes)
 
-        self._fit_and_transform(
+        self.derived_params = self._fit_and_transform(
             fit_end_idx=fit_end_idx, force_refit=not self.preprocessor.fitted
         )
         self._set_split_view()
@@ -102,8 +103,8 @@ class TimeSeriesDataset(Dataset):
         parse_cols = [self.config.date_column] if self.config.date_column else None
         return pd.read_csv(self.config.file_path, parse_dates=parse_cols)
 
-    def _fit_and_transform(self, fit_end_idx: int | None, force_refit: bool) -> None:
-        """Ejecuta los protocolos de preprocesado numérico si corresponde."""
+    def _fit_and_transform(self, fit_end_idx: int | None, force_refit: bool) -> dict:
+        """Ejecuta los protocolos de preprocesado numérico. Retorna parámetros derivados."""
         fit_scope = self.preprocessor.fit_scope
         should_refit = (
             force_refit
@@ -121,10 +122,6 @@ class TimeSeriesDataset(Dataset):
         self.full_data_scaled = transformed_df.values.astype(np.float32)
         self.scaler = self.preprocessor.scaler
 
-        self.config.enc_in = len(self.feature_columns)
-        self.config.dec_in = len(self.feature_columns)
-        self.config.c_out = len(self.config.target_features)
-
         cutoff = self.preprocessor.fit_end_idx or max(
             1, int(len(self.full_data_scaled) * 0.7)
         )
@@ -133,6 +130,18 @@ class TimeSeriesDataset(Dataset):
 
         if self.config.persist_artifacts:
             self.preprocessor.save_artifacts(self.config.artifact_dir)
+        
+        return {
+            "enc_in": len(self.feature_columns),
+            "dec_in": len(self.feature_columns),
+            "c_out": len(self.config.target_features)
+        }
+
+    def _validate_contract(self, df: pd.DataFrame) -> None:
+        """Valida que el dataset cumpla con el contrato de 11 características."""
+        expected_features = 11
+        if df.shape[1] < expected_features:
+            raise ValueError(f"Contrato de datos roto: se esperaban al menos {expected_features} columnas, se obtuvieron {df.shape[1]}.")
 
     def _set_split_view(self) -> None:
         """Vista estática 70/20/10 (train/val/test) para uso standalone o en tests.
